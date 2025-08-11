@@ -44,6 +44,7 @@ export class ExpenseService {
     const expense = this.expenseRepository.create({
       ...dto,
       CreatedBy: employee,
+      Status: 'Pending',
     });
     const response = await this.expenseRepository.save(expense);
 

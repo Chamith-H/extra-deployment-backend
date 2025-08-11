@@ -553,9 +553,13 @@ export class JobService {
 
   //!--> Get inside journey job actions
   async getInsideJourneyJobActions(journeyId: string) {
-    return await this.jobJourneyRepository.find({
+    const assignations = await this.jobJourneyRepository.find({
       where: { JourneyID: journeyId },
     });
+
+    console.log(assignations);
+
+    return assignations;
   }
 
   //!--> Updating remarks

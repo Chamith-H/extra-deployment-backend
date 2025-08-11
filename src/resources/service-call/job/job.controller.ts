@@ -62,15 +62,15 @@ export class JobController {
   }
 
   //!--> Get journey documents
-  @Get('journey-docs/:journeyId')
-  async getJourneyDocs(@Param('journeyId') journeyId: string) {
-    return await this.jobService.getJourneyDocuments(journeyId);
+  @Post('journey-docs')
+  async getJourneyDocs(@Body() dto: any) {
+    return await this.jobService.getJourneyDocuments(dto.journeyId);
   }
 
   //!--> Get job journeys
-  @Get('job-journeys/:journeyId')
-  async getJobJourneys(@Param('journeyId') journeyId: string) {
-    return await this.jobService.getInsideJourneyJobActions(journeyId);
+  @Post('job-journeys')
+  async getJobJourneys(@Body() dto: any) {
+    return await this.jobService.getInsideJourneyJobActions(dto.journeyId);
   }
 
   //!--> Get availbale journey

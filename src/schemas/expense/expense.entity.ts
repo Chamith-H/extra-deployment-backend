@@ -30,5 +30,5 @@ export class Expense {
   CreatedBy: string;
 
   @Column({ default: 'Pending', nullable: true })
-  Status?: string;
+  Status: string;
 }
