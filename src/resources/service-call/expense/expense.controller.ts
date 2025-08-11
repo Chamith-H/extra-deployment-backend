@@ -66,4 +66,10 @@ export class ExpenseController {
   async approveExpense(@Body() dto: any) {
     return await this.expenseService.approveExpense(dto.expID);
   }
+
+  @Public()
+  @Post('reject-expense')
+  async rejectExpense(@Body() dto: any) {
+    return await this.expenseService.rejectExpense(dto.expID);
+  }
 }

@@ -149,4 +149,20 @@ export class ExpenseService {
       };
     }
   }
+
+  //!--> Approve expense
+  async rejectExpense(expenseId: string) {
+    const updater = await this.expenseRepository.update(
+      { ExpenseID: expenseId },
+      {
+        Status: 'Rejected',
+      },
+    );
+
+    if (updater) {
+      return {
+        message: 'Expense rejected successfully!',
+      };
+    }
+  }
 }
