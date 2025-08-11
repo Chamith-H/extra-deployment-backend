@@ -290,7 +290,6 @@ export class JobService {
 
   //!--> Update status
   async updateStatus(dto: StatusUpdateDto) {
-    console.log(dto);
     const jobJourneyDocumnent = {
       JourneyID: dto.JourneyID,
       JobID: dto.JobID,
@@ -556,8 +555,6 @@ export class JobService {
     const assignations = await this.jobJourneyRepository.find({
       where: { JourneyID: journeyId },
     });
-
-    console.log(assignations);
 
     return assignations;
   }
