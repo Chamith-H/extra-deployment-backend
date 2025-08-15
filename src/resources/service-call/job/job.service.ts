@@ -25,6 +25,10 @@ import { Cron } from '@nestjs/schedule';
 import { NotificationT } from 'src/schemas/setting/notification.entity';
 import { NotifyDto } from './dto/notify.dto';
 import Expo from 'expo-server-sdk';
+import { FilterWebJobDto } from './dto/filter-web-job.dto';
+import { PaginationModel } from 'src/configs/interfaces/pagination.model';
+import { PaginationService } from 'src/shared/table-paginator.service';
+import { FilterWebJourneyDto } from './dto/filter-web-journey.dto';
 
 @Injectable()
 export class JobService {
@@ -48,6 +52,7 @@ export class JobService {
     private readonly notifyRepository: Repository<NotificationT>,
 
     private readonly sapService: SapService,
+    private readonly paginationService: PaginationService,
     private readonly dateGeneratorService: DateGeneratorService,
   ) {}
 
@@ -290,6 +295,7 @@ export class JobService {
 
   //!--> Update status
   async updateStatus(dto: StatusUpdateDto) {
+    console.log(dto);
     const jobJourneyDocumnent = {
       JourneyID: dto.JourneyID,
       JobID: dto.JobID,
@@ -552,11 +558,9 @@ export class JobService {
 
   //!--> Get inside journey job actions
   async getInsideJourneyJobActions(journeyId: string) {
-    const assignations = await this.jobJourneyRepository.find({
+    return await this.jobJourneyRepository.find({
       where: { JourneyID: journeyId },
     });
-
-    return assignations;
   }
 
   //!--> Updating remarks
@@ -716,8 +720,76 @@ export class JobService {
     }
   }
 
-  @Cron('*/2 * * * *')
-  handleCron() {
-    this.getServiceCallSchedulings();
+  // @Cron('*/2 * * * *')
+  // handleCron() {
+  //   this.getServiceCallSchedulings();
+  // }
+
+  //!--> Get pagination
+  async getAll(dto: FilterWebJobDto, pagination: PaginationModel) {
+    if (dto.JobID) {
+      dto.JobID = Like(`%${dto.JobID}%`);
+    }
+
+    if (dto.Technician && dto.Technician !== '') {
+      dto.Technician = Number(dto.Technician);
+    }
+
+    const list = await this.jobRepository.find({
+      where: dto,
+      take: pagination.limit,
+      skip: pagination.offset,
+      order: { id: 'DESC' },
+    });
+
+    return await this.paginationService.pageData(
+      list,
+      this.jobRepository,
+      dto,
+      pagination,
+    );
+  }
+
+  //!--> Get job actions
+  async getJobActions(id: string) {
+    const actions = await this.jobJourneyRepository.find({
+      where: { JobID: id },
+    });
+
+    return actions;
+  }
+
+  //!--> Get job documents
+  async getJobDocuments(id: string) {
+    const documents = await this.jobDocumentRepository.find({
+      where: { JobID: id },
+    });
+
+    return documents;
+  }
+
+  //!--> Get Journey pagination
+  async getAllJourneys(dto: FilterWebJourneyDto, pagination: PaginationModel) {
+    if (dto.JourneyID) {
+      dto.JourneyID = Like(`%${dto.JourneyID}%`);
+    }
+
+    if (dto.Technician && dto.Technician !== '') {
+      dto.Technician = Number(dto.Technician);
+    }
+
+    const list = await this.journeyRepository.find({
+      where: dto,
+      take: pagination.limit,
+      skip: pagination.offset,
+      order: { id: 'DESC' },
+    });
+
+    return await this.paginationService.pageData(
+      list,
+      this.journeyRepository,
+      dto,
+      pagination,
+    );
   }
 }

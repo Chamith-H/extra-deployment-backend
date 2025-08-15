@@ -11,6 +11,7 @@ import { IntegrationModule } from './resources/integration/integration.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './configs/guards/jwt-auth.guard';
 import { ScheduleModule } from '@nestjs/schedule';
+import { HomeModule } from './resources/home/home.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ServiceCallModule,
     SettingModule,
     IntegrationModule,
+    HomeModule,
   ],
   controllers: [AppController],
   providers: [

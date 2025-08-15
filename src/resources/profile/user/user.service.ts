@@ -72,6 +72,21 @@ export class UserService {
     }
   }
 
+  //!--> Update
+  async update(id: string, dto: UserDto) {
+    const updater = await this.userRepository.update(
+      { id: Number(id) },
+      {
+        ...dto,
+      },
+    );
+    if (updater) {
+      return {
+        message: 'User updated successfully!',
+      };
+    }
+  }
+
   //!--> Get pagination
   async getAll(dto: FilterUserDto, pagination: PaginationModel) {
     if (dto.name) {
@@ -92,5 +107,15 @@ export class UserService {
       dto,
       pagination,
     );
+  }
+
+  //!--> Get single user
+  async getSingleUser(id: string) {
+    const userData = await this.userRepository.findOne({
+      where: { employId: id },
+      relations: ['role'],
+    });
+
+    return userData;
   }
 }

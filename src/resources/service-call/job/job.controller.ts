@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { JobService } from './job.service';
 import { JobDto } from './dto/job.dto';
 import { Public } from 'src/configs/decorators/public.decorator';
@@ -16,6 +16,11 @@ import { FilterDateDto } from './dto/filter-job.dto';
 import { UpdateRemarkDto } from './dto/update-remark.dto';
 import { SampleCountDto } from './dto/sample-count.dto';
 import { NotifyDto } from './dto/notify.dto';
+import { Pagination } from 'src/configs/decorators/pagination.decorator';
+import { PaginationModel } from 'src/configs/interfaces/pagination.model';
+import { FilterObject } from 'src/configs/decorators/filter.decorator';
+import { FilterWebJobDto } from './dto/filter-web-job.dto';
+import { FilterWebJourneyDto } from './dto/filter-web-journey.dto';
 
 @Controller('job')
 export class JobController {
@@ -62,15 +67,15 @@ export class JobController {
   }
 
   //!--> Get journey documents
-  @Post('journey-docs')
-  async getJourneyDocs(@Body() dto: any) {
-    return await this.jobService.getJourneyDocuments(dto.journeyId);
+  @Get('journey-docs/:journeyId')
+  async getJourneyDocs(@Param('journeyId') journeyId: string) {
+    return await this.jobService.getJourneyDocuments(journeyId);
   }
 
   //!--> Get job journeys
-  @Post('job-journeys')
-  async getJobJourneys(@Body() dto: any) {
-    return await this.jobService.getInsideJourneyJobActions(dto.journeyId);
+  @Get('job-journeys/:journeyId')
+  async getJobJourneys(@Param('journeyId') journeyId: string) {
+    return await this.jobService.getInsideJourneyJobActions(journeyId);
   }
 
   //!--> Get availbale journey
@@ -156,5 +161,41 @@ export class JobController {
   @Get('sync-from-sap')
   async getServiceCallSchedulings() {
     return await this.jobService.getServiceCallSchedulings();
+  }
+
+  //!--> Paginate jobs
+  @Public()
+  @HttpCode(200)
+  @Post('all')
+  async getAll(
+    @Pagination() pagination: PaginationModel,
+    @FilterObject() dto: FilterWebJobDto,
+  ) {
+    return await this.jobService.getAll(dto, pagination);
+  }
+
+  //!--> get job journeys by job id
+  @Public()
+  @Get('job-actions/:id')
+  async getJobActions(@Param('id') id: string) {
+    return await this.jobService.getJobActions(id);
+  }
+
+  //!--> get job journeys by job id
+  @Public()
+  @Get('job-documents/:id')
+  async getJobDocuments(@Param('id') id: string) {
+    return await this.jobService.getJobDocuments(id);
+  }
+
+  //!--> Paginate journeys
+  @Public()
+  @HttpCode(200)
+  @Post('all-journeys')
+  async getAllJourneys(
+    @Pagination() pagination: PaginationModel,
+    @FilterObject() dto: FilterWebJourneyDto,
+  ) {
+    return await this.jobService.getAllJourneys(dto, pagination);
   }
 }

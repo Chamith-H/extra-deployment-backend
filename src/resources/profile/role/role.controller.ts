@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { RoleService } from './role.service';
 import { RoleDto } from './dto/role.dto';
 import { Pagination } from 'src/configs/decorators/pagination.decorator';
@@ -17,6 +26,20 @@ export class RoleController {
   @Post('create')
   async create(@Body() dto: RoleDto) {
     return await this.roleService.create(dto);
+  }
+
+  //!--> Update role
+  @Public()
+  @Put('update/:id')
+  async update(@Param('id') id: string, @Body() dto: RoleDto) {
+    return await this.roleService.update(id, dto);
+  }
+
+  //!--> Delete role
+  @Public()
+  @Delete('remove/:id')
+  async remove(@Param('id') id: string) {
+    return await this.roleService.deleteRole(id);
   }
 
   //!--> Paginate roles

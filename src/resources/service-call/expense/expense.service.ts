@@ -71,6 +71,22 @@ export class ExpenseService {
     return data;
   }
 
+  //!--> Get seleted expense list to web
+  async getSelectedExpensToWeb(dto: SelectedExpenseDto) {
+    let filterObj = null;
+
+    if (dto.target === 'JourneyID') {
+      filterObj = { JourneyID: dto.value };
+    } else if (dto.target === 'JobID') {
+      filterObj = { JobID: dto.value };
+    } else {
+      filterObj = {};
+    }
+
+    const data = await this.expenseRepository.find({ where: filterObj });
+    return data;
+  }
+
   //!--> Get monthly expenses
   async getMonthlyExpenses(dto: FilterDateDto, employee: string) {
     const { year, month } = dto;
@@ -143,26 +159,9 @@ export class ExpenseService {
         Status: 'Approved',
       },
     );
-
     if (updater) {
       return {
         message: 'Expense approved successfully!',
-      };
-    }
-  }
-
-  //!--> Approve expense
-  async rejectExpense(expenseId: string) {
-    const updater = await this.expenseRepository.update(
-      { ExpenseID: expenseId },
-      {
-        Status: 'Rejected',
-      },
-    );
-
-    if (updater) {
-      return {
-        message: 'Expense rejected successfully!',
       };
     }
   }

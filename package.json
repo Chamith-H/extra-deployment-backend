@@ -5,9 +5,6 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
-  "engines": {
-    "node": ">=20.0.0"
-  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -35,7 +32,6 @@
     "axios": "^1.10.0",
     "cheerio": "^1.1.0",
     "class-validator": "^0.14.2",
-    "crypto": "^1.0.1",
     "expo-server-sdk": "^3.15.0",
     "generate-password": "^1.7.1",
     "moment-timezone": "^0.6.0",

@@ -8,10 +8,14 @@ import { PaginationModel } from 'src/configs/interfaces/pagination.model';
 import { PaginationService } from 'src/shared/table-paginator.service';
 import { AddPermissionDto } from './dto/add-permission.dto';
 import { Access } from 'src/schemas/profile/permission.entity';
+import { User } from 'src/schemas/profile/user.entity';
 
 @Injectable()
 export class RoleService {
   constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
 
@@ -34,6 +38,21 @@ export class RoleService {
     if (response) {
       return {
         message: 'User role created successfully!',
+      };
+    }
+  }
+
+  //!--> Update
+  async update(id: string, dto: RoleDto) {
+    const updater = await this.roleRepository.update(
+      { id: Number(id) },
+      {
+        ...dto,
+      },
+    );
+    if (updater) {
+      return {
+        message: 'User role updated successfully!',
       };
     }
   }
@@ -82,6 +101,8 @@ export class RoleService {
       relations: ['accesses'], // optional
     });
 
+    console.log(role);
+
     if (!role) {
       throw new Error('Role not found');
     }
@@ -95,6 +116,30 @@ export class RoleService {
     if (updatedRole) {
       return {
         message: 'Permissions updated successfully!',
+      };
+    }
+  }
+
+  //!--> Delete role
+  async deleteRole(id: string) {
+    const hasUser = await this.userRepository.findOne({
+      where: {
+        role: { id: Number(id) },
+      },
+      relations: ['role'],
+    });
+
+    if (hasUser) {
+      throw new BadRequestException(
+        'Cannot delete, This user role has been assigned to some users!',
+      );
+    }
+
+    const deleter = await this.roleRepository.delete(Number(id));
+
+    if (deleter) {
+      return {
+        message: 'User role deleted successfully!',
       };
     }
   }

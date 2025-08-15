@@ -36,6 +36,12 @@ export class ExpenseController {
     return await this.expenseService.getSelectedExpens(dto, employee);
   }
 
+  @Public()
+  @Post('selected-expenses-for-web')
+  async getSelectedExpensesForWeb(@Body() dto: SelectedExpenseDto) {
+    return await this.expenseService.getSelectedExpensToWeb(dto);
+  }
+
   @Post('monthly-expenses')
   async getMonthlyExpenses(
     @Body() dto: FilterDateDto,
@@ -65,11 +71,5 @@ export class ExpenseController {
   @Post('approve-expense')
   async approveExpense(@Body() dto: any) {
     return await this.expenseService.approveExpense(dto.expID);
-  }
-
-  @Public()
-  @Post('reject-expense')
-  async rejectExpense(@Body() dto: any) {
-    return await this.expenseService.rejectExpense(dto.expID);
   }
 }
