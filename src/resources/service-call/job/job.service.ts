@@ -731,10 +731,10 @@ export class JobService {
     }
   }
 
-  // @Cron('*/2 * * * *')
-  // handleCron() {
-  //   this.getServiceCallSchedulings();
-  // }
+  @Cron('*/2 * * * *')
+  handleCron() {
+    this.getServiceCallSchedulings();
+  }
 
   //!--> Get pagination
   async getAll(dto: FilterWebJobDto, pagination: PaginationModel) {
