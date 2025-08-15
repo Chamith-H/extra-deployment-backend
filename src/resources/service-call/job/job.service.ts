@@ -180,6 +180,17 @@ export class JobService {
     return availableJourney;
   }
 
+  //!--> Get selected journey
+  async getSelectedJourney(journeyId: string) {
+    const selectedJourney = await this.journeyRepository.findOne({
+      where: {
+        JourneyID: journeyId
+      },
+    });
+
+    return selectedJourney
+  }
+
   //!--> give acknowledgement
   async giveAcknowledgement(dto: AcknowledgeJobDto) {
     const sapBody = {

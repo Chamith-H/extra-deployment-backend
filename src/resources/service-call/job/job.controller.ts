@@ -84,6 +84,12 @@ export class JobController {
     return await this.jobService.getAvailableJourney(employeeId);
   }
 
+   //!--> Get selected journey
+  @Post('c-selected-journey')
+  async getSelectedJourney(@Body() dto: any) {
+    return await this.jobService.getSelectedJourney(dto.journeyId);
+  }
+
   //!--> Check in
   @Post('acknowledge')
   async giveAcknowledge(@Body() dto: AcknowledgeJobDto) {
