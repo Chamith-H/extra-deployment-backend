@@ -734,6 +734,7 @@ export class JobService {
   @Cron('*/2 * * * *')
   handleCron() {
     this.getServiceCallSchedulings();
+    // Cron schedule
   }
 
   //!--> Get pagination
