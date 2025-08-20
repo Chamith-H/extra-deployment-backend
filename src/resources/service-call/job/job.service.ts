@@ -184,11 +184,11 @@ export class JobService {
   async getSelectedJourney(journeyId: string) {
     const selectedJourney = await this.journeyRepository.findOne({
       where: {
-        JourneyID: journeyId
+        JourneyID: journeyId,
       },
     });
 
-    return selectedJourney
+    return selectedJourney;
   }
 
   //!--> give acknowledgement

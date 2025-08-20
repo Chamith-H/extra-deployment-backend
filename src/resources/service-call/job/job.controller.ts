@@ -67,6 +67,7 @@ export class JobController {
   }
 
   //!--> Get journey documents
+  @Public()
   @Post('journey-docs')
   async getJourneyDocs(@Body() dto: any) {
     return await this.jobService.getJourneyDocuments(dto.journeyId);
@@ -84,7 +85,7 @@ export class JobController {
     return await this.jobService.getAvailableJourney(employeeId);
   }
 
-   //!--> Get selected journey
+  //!--> Get selected journey
   @Post('c-selected-journey')
   async getSelectedJourney(@Body() dto: any) {
     return await this.jobService.getSelectedJourney(dto.journeyId);
