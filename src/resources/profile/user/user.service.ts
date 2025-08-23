@@ -118,4 +118,11 @@ export class UserService {
 
     return userData;
   }
+
+  //!--> Get all users
+  async getAllUsers() {
+    return this.userRepository.find({
+      select: ['name', 'employId'],
+    });
+  }
 }

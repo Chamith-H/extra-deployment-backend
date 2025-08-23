@@ -50,4 +50,11 @@ export class UserController {
   async getSingleUser(@Param('id') id: string) {
     return await this.userService.getSingleUser(id);
   }
+
+  //!--> Get all users
+  @Public()
+  @Get('user-drop')
+  async getUserDrop() {
+    return await this.userService.getAllUsers();
+  }
 }

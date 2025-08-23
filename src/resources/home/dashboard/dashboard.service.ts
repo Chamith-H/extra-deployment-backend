@@ -50,13 +50,7 @@ export class DashboardService {
       }),
     };
 
-    const openJobs = await this.jobRepository.find({
-      where: {
-        FinalStatus: Not(In(['Completed and Checkout', 'Rejected'])),
-      },
-    });
-
-    console.log(openJobs);
+    const openJobs = await this.jobRepository.find({});
 
     return {
       counts: counts,
