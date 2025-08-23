@@ -733,7 +733,7 @@ export class JobService {
 
   @Cron('*/2 * * * *')
   handleCron() {
-    // this.getServiceCallSchedulings();
+    this.getServiceCallSchedulings();
     // Cron schedule
   }
 
