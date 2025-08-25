@@ -1,7 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Job } from 'src/schemas/service-call/job.entity';
-import { Like, Repository } from 'typeorm';
+import {
+  Between,
+  FindOptionsWhere,
+  LessThanOrEqual,
+  Like,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { JobDto } from './dto/job.dto';
 import { AcknowledgeJobDto } from './dto/acknowledgement.dto';
 import { JobDocument } from 'src/schemas/service-call/job-document.entity';
@@ -739,25 +746,88 @@ export class JobService {
 
   //!--> Get pagination
   async getAll(dto: FilterWebJobDto, pagination: PaginationModel) {
-    if (dto.JobID) {
-      dto.JobID = Like(`%${dto.JobID}%`);
+    const where: FindOptionsWhere<Job> = {};
+    if (dto.jobId) {
+      where.JobID = Like(`%${dto.jobId}%`);
+    }
+    if (dto.technician) {
+      where.Technician = dto.technician;
+    }
+    if (dto.priority) {
+      where.Priority = Like(`%${dto.priority}%`);
+    }
+    if (dto.finalStatus) {
+      where.FinalStatus = Like(`%${dto.finalStatus}%`);
+    }
+    if (dto.startDate && dto.endDate) {
+      where.PlannedStartDateTime = MoreThanOrEqual(`${dto.startDate}T00:00:00`);
+      where.PlannedEndDateTime = LessThanOrEqual(`${dto.endDate}T23:59:59`);
+    } else if (dto.startDate) {
+      where.PlannedStartDateTime = Between(
+        `${dto.startDate}T00:00:00`,
+        `${dto.startDate}T23:59:59`,
+      );
+    } else if (dto.endDate) {
+      where.PlannedEndDateTime = Between(
+        `${dto.endDate}T00:00:00`,
+        `${dto.endDate}T23:59:59`,
+      );
     }
 
-    if (dto.Technician && dto.Technician !== '') {
-      dto.Technician = Number(dto.Technician);
+    // instead of repository.find() with "order",
+    // use QueryBuilder so we can inject CASE for Priority
+    const query = this.jobRepository.createQueryBuilder('job').where(where);
+
+    if (dto.action === 'ASC_ID') {
+      query.orderBy('job.id', 'ASC');
+    } else if (dto.action === 'DESC_ID') {
+      query.orderBy('job.id', 'DESC');
+    } else if (dto.action === 'ASC_JobID') {
+      query.orderBy('job.JobID', 'ASC');
+    } else if (dto.action === 'DESC_JobID') {
+      query.orderBy('job.JobID', 'DESC');
+    } else if (dto.action === 'ASC_Priority') {
+      query.orderBy(
+        `CASE 
+        WHEN job.Priority = 'Low' THEN 1
+        WHEN job.Priority = 'Medium' THEN 2
+        WHEN job.Priority = 'High' THEN 3
+        ELSE 4
+      END`,
+        'ASC',
+      );
+    } else if (dto.action === 'DESC_Priority') {
+      query.orderBy(
+        `CASE 
+        WHEN job.Priority = 'High' THEN 1
+        WHEN job.Priority = 'Medium' THEN 2
+        WHEN job.Priority = 'Low' THEN 3
+        ELSE 4
+      END`,
+        'ASC',
+      );
+    } else if (dto.action === 'ASC_SDate') {
+      query.orderBy('job.PlannedStartDateTime', 'ASC');
+    } else if (dto.action === 'DESC_SDate') {
+      query.orderBy('job.PlannedStartDateTime', 'DESC');
+    } else if (dto.action === 'ASC_EDate') {
+      query.orderBy('job.PlannedEndDateTime', 'ASC');
+    } else if (dto.action === 'DESC_EDate') {
+      query.orderBy('job.PlannedEndDateTime', 'DESC');
+    } else {
+      // ✅ default
+      query.orderBy('job.id', 'DESC');
     }
 
-    const list = await this.jobRepository.find({
-      where: dto,
-      take: pagination.limit,
-      skip: pagination.offset,
-      order: { id: 'DESC' },
-    });
+    // pagination
+    query.take(pagination.limit).skip(pagination.offset);
+
+    const list = await query.getMany();
 
     return await this.paginationService.pageData(
       list,
       this.jobRepository,
-      dto,
+      where, // still used in paginationService
       pagination,
     );
   }

@@ -6,7 +6,12 @@ export const FilterObject = createParamDecorator(
     const dto = request.body;
 
     for (let key in dto) {
-      if (dto[key] === '' || dto[key] === undefined || dto[key] === null) {
+      if (
+        dto[key] === '' ||
+        dto[key] === undefined ||
+        dto[key] === null ||
+        dto[key] === 'All'
+      ) {
         delete dto[key];
       }
 

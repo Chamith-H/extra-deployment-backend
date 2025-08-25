@@ -1,21 +1,25 @@
 import { IsOptional } from 'class-validator';
+import { FindOptionsOrderValue } from 'typeorm';
 
 export class FilterWebJobDto {
   @IsOptional()
-  JobID: any;
+  jobId: any;
 
   @IsOptional()
-  Technician: any;
+  technician: any;
 
   @IsOptional()
-  Priority: string;
+  priority: string;
 
   @IsOptional()
-  PlannedStartDateTime: string;
+  startDate: string;
 
   @IsOptional()
-  PlannedEndDateTime: string;
+  endDate: string;
 
   @IsOptional()
-  FinalStatus: string;
+  finalStatus: string;
+
+  @IsOptional()
+  action: string;
 }
