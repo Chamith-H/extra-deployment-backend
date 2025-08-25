@@ -36,6 +36,7 @@ import { FilterWebJobDto } from './dto/filter-web-job.dto';
 import { PaginationModel } from 'src/configs/interfaces/pagination.model';
 import { PaginationService } from 'src/shared/table-paginator.service';
 import { FilterWebJourneyDto } from './dto/filter-web-journey.dto';
+import { User } from 'src/schemas/profile/user.entity';
 
 @Injectable()
 export class JobService {
@@ -774,10 +775,18 @@ export class JobService {
       );
     }
 
-    // instead of repository.find() with "order",
-    // use QueryBuilder so we can inject CASE for Priority
-    const query = this.jobRepository.createQueryBuilder('job').where(where);
+    const query = this.jobRepository
+      .createQueryBuilder('job')
+      .leftJoin(User, 'user', 'CAST(job.Technician AS varchar) = user.employId')
+      .addSelect(['user.name AS technicianName'])
+      .addSelect(['job.JobID AS JobID'])
+      .addSelect(['job.Priority AS Priority'])
+      .addSelect(['job.FinalStatus AS FinalStatus'])
+      .addSelect(['job.PlannedStartDateTime AS PlannedStartDateTime'])
+      .addSelect(['job.PlannedEndDateTime AS PlannedEndDateTime'])
+      .where(where);
 
+    // sorting (same as before)
     if (dto.action === 'ASC_ID') {
       query.orderBy('job.id', 'ASC');
     } else if (dto.action === 'DESC_ID') {
@@ -815,19 +824,17 @@ export class JobService {
     } else if (dto.action === 'DESC_EDate') {
       query.orderBy('job.PlannedEndDateTime', 'DESC');
     } else {
-      // ✅ default
       query.orderBy('job.id', 'DESC');
     }
 
-    // pagination
     query.take(pagination.limit).skip(pagination.offset);
 
-    const list = await query.getMany();
+    const list = await query.getRawMany(); // ✅ because we used addSelect alias
 
     return await this.paginationService.pageData(
       list,
       this.jobRepository,
-      where, // still used in paginationService
+      where,
       pagination,
     );
   }
