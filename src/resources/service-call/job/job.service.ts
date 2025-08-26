@@ -779,11 +779,52 @@ export class JobService {
       .createQueryBuilder('job')
       .leftJoin(User, 'user', 'CAST(job.Technician AS varchar) = user.employId')
       .addSelect(['user.name AS technicianName'])
-      .addSelect(['job.JobID AS JobID'])
-      .addSelect(['job.Priority AS Priority'])
-      .addSelect(['job.FinalStatus AS FinalStatus'])
-      .addSelect(['job.PlannedStartDateTime AS PlannedStartDateTime'])
-      .addSelect(['job.PlannedEndDateTime AS PlannedEndDateTime'])
+      .addSelect([
+        'job.JobID AS JobID',
+        'job.Priority AS Priority',
+        'job.FinalStatus AS FinalStatus',
+        'job.PlannedStartDateTime AS PlannedStartDateTime',
+        'job.PlannedEndDateTime AS PlannedEndDateTime',
+        'job.ActualStartDateTime AS ActualStartDateTime',
+        'job.ActualEndDateTime AS ActualEndDateTime',
+        'job.Acknowledgement AS Acknowledgement',
+        'job.AcknowledgementDateTime AS AcknowledgementDateTime',
+        'job.AcknowledgementLat AS AcknowledgementLat',
+        'job.AcknowledgementLong AS AcknowledgementLong',
+        'job.AcknowledgementReason AS AcknowledgementReason',
+        'job.CheckedIn AS CheckedIn',
+        'job.CheckedInDateTime AS CheckedInDateTime',
+        'job.CheckedInLat AS CheckedInLat',
+        'job.CheckedInLong AS CheckedInLong',
+        'job.CheckedInMeter AS CheckedInMeter',
+        'job.CheckedInVehicleNumber AS CheckedInVehicleNumber',
+        'job.CheckoutDateTime AS CheckoutDateTime',
+        'job.Address AS Address',
+        'job.BPCode AS BPCode',
+        'job.City AS City',
+        'job.ContactPerson AS ContactPerson',
+        'job.Count AS Count',
+        'job.Country AS Country',
+        'job.CreationDate AS CreationDate',
+        'job.Customer AS Customer',
+        'job.HoldSecCount AS HoldSecCount',
+        'job.HoldStartedDateTime AS HoldStartedDateTime',
+        'job.ItemCode AS ItemCode',
+        'job.ItemDescription AS ItemDescription',
+        'job.ItemGroup AS ItemGroup',
+        'job.Line AS Line',
+        'job.MfrSerial AS MfrSerial',
+        'job.Remarks AS Remarks',
+        'job.Room AS Room',
+        'job.SerialNumber AS SerialNumber',
+        'job.SrcvCallDocNum AS SrcvCallDocNum',
+        'job.SrcvCallID AS SrcvCallID',
+        'job.Status AS Status',
+        'job.StreetNo AS StreetNo',
+        'job.Subject AS Subject',
+        'job.Technician AS Technician',
+        'job.id AS id',
+      ])
       .where(where);
 
     // sorting (same as before)
