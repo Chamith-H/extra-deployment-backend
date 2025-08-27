@@ -3,7 +3,7 @@ import { ExpenseDocumentDto } from './dto/expense-document.dto';
 import { ExpenseDto } from './dto/expense.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Expense } from 'src/schemas/expense/expense.entity';
-import { Like, Repository } from 'typeorm';
+import { Between, FindOptionsWhere, Like, Not, Repository } from 'typeorm';
 import { ExpenseDocument } from 'src/schemas/expense/expense-document.entity';
 import { SelectedExpenseDto } from './dto/selected-expense.dto';
 import { FilterDateDto } from '../job/dto/filter-job.dto';
@@ -108,21 +108,92 @@ export class ExpenseService {
 
   //!--> Get pagination
   async getAll(dto: FilterExpenseDto, pagination: PaginationModel) {
-    if (dto.ExpenseID) {
-      dto.ExpenseID = Like(`%${dto.ExpenseID}%`);
+    const where: FindOptionsWhere<Expense> = {};
+
+    if (dto.expenseID) {
+      where.ExpenseID = Like(`%${dto.expenseID}%`);
+    }
+    if (dto.category) {
+      if (dto.category === 'Jobs') {
+        where.JobID = Not('');
+      } else if (dto.category === 'Journeys') {
+        where.JourneyID = Not('');
+      } else {
+        where.JobID = '';
+        where.JourneyID = '';
+      }
+    }
+    if (dto.referanceID) {
+      // reference can be JobID or JourneyID
+      where.JobID = Like(`%${dto.referanceID}%`);
+      // 👉 if you want to check both JobID and JourneyID, you’ll need OR in QB instead of here
+    }
+    if (dto.type) {
+      where.Type = Like(`%${dto.type}%`);
+    }
+    if (dto.amount) {
+      where.Amount = Like(`%${dto.amount}%`);
+    }
+    if (dto.status) {
+      where.Status = Like(`%${dto.status}%`);
+    }
+    if (dto.createdDate) {
+      where.CreatedDate = Between(
+        `${dto.createdDate}T00:00:00`,
+        `${dto.createdDate}T23:59:59`,
+      );
+    }
+    if (dto.technician) {
+      // since CreatedBy is string, we’ll filter via join instead of here
     }
 
-    const list = await this.expenseRepository.find({
-      where: dto,
-      take: pagination.limit,
-      skip: pagination.offset,
-      order: { id: 'DESC' },
-    });
+    const query = this.expenseRepository
+      .createQueryBuilder('expense')
+      .leftJoin(User, 'user', 'expense.CreatedBy = user.employId')
+      .addSelect(['user.name AS createdByName'])
+      .addSelect([
+        'expense.id AS id',
+        'expense.ExpenseID AS ExpenseID',
+        'expense.JobID AS JobID',
+        'expense.JourneyID AS JourneyID',
+        'expense.Type AS Type',
+        'expense.Amount AS Amount',
+        'expense.Description AS Description',
+        'expense.CreatedDate AS CreatedDate',
+        'expense.CreatedBy AS CreatedBy',
+        'expense.Status AS Status',
+      ])
+      .where(where);
+
+    // sorting
+    if (dto.actions === 'ASC_ID') {
+      query.orderBy('expense.id', 'ASC');
+    } else if (dto.actions === 'DESC_ID') {
+      query.orderBy('expense.id', 'DESC');
+    } else if (dto.actions === 'ASC_ExpenseID') {
+      query.orderBy('expense.ExpenseID', 'ASC');
+    } else if (dto.actions === 'DESC_ExpenseID') {
+      query.orderBy('expense.ExpenseID', 'DESC');
+    } else if (dto.actions === 'ASC_Amount') {
+      query.orderBy('CAST(expense.Amount AS float)', 'ASC');
+    } else if (dto.actions === 'DESC_Amount') {
+      query.orderBy('CAST(expense.Amount AS float)', 'DESC');
+    } else if (dto.actions === 'ASC_CDate') {
+      query.orderBy('expense.CreatedDate', 'ASC');
+    } else if (dto.actions === 'DESC_CDate') {
+      query.orderBy('expense.CreatedDate', 'DESC');
+    } else {
+      query.orderBy('expense.id', 'DESC');
+    }
+
+    query.take(pagination.limit).skip(pagination.offset);
+
+    const list = await query.getRawMany();
 
     return await this.paginationService.pageData(
       list,
       this.expenseRepository,
-      dto,
+      where,
       pagination,
     );
   }

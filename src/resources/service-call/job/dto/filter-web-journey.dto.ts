@@ -2,23 +2,26 @@ import { IsOptional } from 'class-validator';
 
 export class FilterWebJourneyDto {
   @IsOptional()
-  JourneyID: any;
+  journeyID: any;
 
   @IsOptional()
-  Technician: any;
+  technician: any;
 
   @IsOptional()
-  VehicleType: string;
+  vehicleType: string;
 
   @IsOptional()
-  StartVehicleNumber: string;
+  vahicleNumber: string;
 
   @IsOptional()
-  StartDateTime: string;
+  startDate: string;
 
   @IsOptional()
-  EndDateTime: string;
+  endDate: string;
 
   @IsOptional()
-  Status: string;
+  status: string;
+
+  @IsOptional()
+  action: string;
 }

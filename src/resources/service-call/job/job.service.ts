@@ -7,6 +7,7 @@ import {
   LessThanOrEqual,
   Like,
   MoreThanOrEqual,
+  Not,
   Repository,
 } from 'typeorm';
 import { JobDto } from './dto/job.dto';
@@ -900,25 +901,104 @@ export class JobService {
 
   //!--> Get Journey pagination
   async getAllJourneys(dto: FilterWebJourneyDto, pagination: PaginationModel) {
-    if (dto.JourneyID) {
-      dto.JourneyID = Like(`%${dto.JourneyID}%`);
+    const where: FindOptionsWhere<Journey> = {};
+
+    if (dto.journeyID) {
+      where.JourneyID = Like(`%${dto.journeyID}%`);
+    }
+    if (dto.technician) {
+      where.Technician = dto.technician; // exact match (number)
+    }
+    if (dto.vehicleType) {
+      where.VehicleType = Like(`%${dto.vehicleType}%`);
+    }
+    if (dto.vahicleNumber) {
+      where.StartVehicleNumber = Like(`%${dto.vahicleNumber}%`);
+      // 👉 if you also want EndVehicleNumber filter, add OR condition with QB instead of here
+    }
+    if (dto.status) {
+      // Only if you actually have a Status column in journeys
+
+      if (dto.status === 'Ongoing') {
+        where.EndDateTime = '';
+      } else {
+        where.EndDateTime = Not('');
+      }
     }
 
-    if (dto.Technician && dto.Technician !== '') {
-      dto.Technician = Number(dto.Technician);
+    // Date filter
+    if (dto.startDate && dto.endDate) {
+      where.StartDateTime = MoreThanOrEqual(`${dto.startDate}T00:00:00`);
+      where.EndDateTime = LessThanOrEqual(`${dto.endDate}T23:59:59`);
+    } else if (dto.startDate) {
+      where.StartDateTime = Between(
+        `${dto.startDate}T00:00:00`,
+        `${dto.startDate}T23:59:59`,
+      );
+    } else if (dto.endDate) {
+      where.EndDateTime = Between(
+        `${dto.endDate}T00:00:00`,
+        `${dto.endDate}T23:59:59`,
+      );
     }
 
-    const list = await this.journeyRepository.find({
-      where: dto,
-      take: pagination.limit,
-      skip: pagination.offset,
-      order: { id: 'DESC' },
-    });
+    const query = this.journeyRepository
+      .createQueryBuilder('journey')
+      .leftJoin(
+        User,
+        'user',
+        'CAST(journey.Technician AS varchar) = user.employId',
+      )
+      .addSelect(['user.name AS technicianName'])
+      .addSelect([
+        'journey.id AS id',
+        'journey.JourneyID AS JourneyID',
+        'journey.Technician AS Technician',
+        'journey.JourneyDate AS JourneyDate',
+        'journey.StartDateTime AS StartDateTime',
+        'journey.StartVehicleNumber AS StartVehicleNumber',
+        'journey.VehicleType AS VehicleType',
+        'journey.StartMeter AS StartMeter',
+        'journey.StartLat AS StartLat',
+        'journey.StartLong AS StartLong',
+        'journey.EndDateTime AS EndDateTime',
+        'journey.EndVehicleNumber AS EndVehicleNumber',
+        'journey.EndMeter AS EndMeter',
+        'journey.EndLat AS EndLat',
+        'journey.EndLong AS EndLong',
+        'journey.CreatedBy AS CreatedBy',
+      ])
+      .where(where);
+
+    // Sorting
+    if (dto.action === 'ASC_ID') {
+      query.orderBy('journey.id', 'ASC');
+    } else if (dto.action === 'DESC_ID') {
+      query.orderBy('journey.id', 'DESC');
+    } else if (dto.action === 'ASC_JourneyID') {
+      query.orderBy('journey.JourneyID', 'ASC');
+    } else if (dto.action === 'DESC_JourneyID') {
+      query.orderBy('journey.JourneyID', 'DESC');
+    } else if (dto.action === 'ASC_SDate') {
+      query.orderBy('journey.StartDateTime', 'ASC');
+    } else if (dto.action === 'DESC_SDate') {
+      query.orderBy('journey.StartDateTime', 'DESC');
+    } else if (dto.action === 'ASC_EDate') {
+      query.orderBy('journey.EndDateTime', 'ASC');
+    } else if (dto.action === 'DESC_EDate') {
+      query.orderBy('journey.EndDateTime', 'DESC');
+    } else {
+      query.orderBy('journey.id', 'DESC');
+    }
+
+    query.take(pagination.limit).skip(pagination.offset);
+
+    const list = await query.getRawMany();
 
     return await this.paginationService.pageData(
       list,
       this.journeyRepository,
-      dto,
+      where,
       pagination,
     );
   }
