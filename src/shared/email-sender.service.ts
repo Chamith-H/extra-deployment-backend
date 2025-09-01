@@ -14,6 +14,10 @@ export class EmailSenderService {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PSWD,
       },
+      // Timeout configs
+      connectionTimeout: 5 * 60 * 1000, // 5 minutes to establish connection
+      greetingTimeout: 30 * 1000, // 30 seconds for greeting after connection
+      socketTimeout: 5 * 60 * 1000, // 5 minutes for inactivity on socket
     });
   }
 
