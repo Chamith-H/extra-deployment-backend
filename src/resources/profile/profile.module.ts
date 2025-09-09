@@ -11,15 +11,22 @@ import { PaginationService } from 'src/shared/table-paginator.service';
 import { User } from 'src/schemas/profile/user.entity';
 import { EmailSenderService } from 'src/shared/email-sender.service';
 import { Access } from 'src/schemas/profile/permission.entity';
+import { IntegrationModule } from '../integration/integration.module';
+import { ErrorLog } from 'src/schemas/common/error-log.entity';
+import { DateGeneratorService } from 'src/shared/date-generator.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Role, User, Access])],
+  imports: [
+    TypeOrmModule.forFeature([Role, User, Access, ErrorLog]),
+    IntegrationModule,
+  ],
   providers: [
     UserService,
     RoleService,
     PermissionService,
     PaginationService,
     EmailSenderService,
+    DateGeneratorService,
   ],
   controllers: [UserController, RoleController, PermissionController],
 })

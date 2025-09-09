@@ -14,6 +14,9 @@ import { FilterObject } from 'src/configs/decorators/filter.decorator';
 import { PaginationModel } from 'src/configs/interfaces/pagination.model';
 import { FilterUserDto } from './dto/filter-user.dto';
 import { Public } from 'src/configs/decorators/public.decorator';
+import { LogDto } from './dto/LogDto';
+import { ErrorDto } from './dto/error.dto';
+import { UserActionDto } from './dto/errorLog.dto';
 
 @Controller('user')
 export class UserController {
@@ -56,5 +59,33 @@ export class UserController {
   @Get('user-drop')
   async getUserDrop() {
     return await this.userService.getAllUsers();
+  }
+
+  //!--> Get Db log
+  @Public()
+  @Post('offline-db-log')
+  async getDbLog(@Body() dto: LogDto) {
+    return await this.userService.getDbLog(dto);
+  }
+
+  //!--> Get Error log
+  @Public()
+  @Post('online-error-log')
+  async getErrorLog(@Body() dto: UserActionDto) {
+    return await this.userService.getErrorLog(dto.employId);
+  }
+
+  //!--> Create error log
+  @Public()
+  @Post('error-log')
+  async createErrorLog(@Body() dto: ErrorDto) {
+    return await this.userService.createErrorLog(dto);
+  }
+
+  //!--> Do manually logout
+  @Public()
+  @Post('manually-logout')
+  async setManuallyLogout(@Body() dto: UserActionDto) {
+    return await this.userService.manuallyLogout(dto.employId);
   }
 }

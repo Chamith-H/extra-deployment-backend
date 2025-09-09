@@ -6,6 +6,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Job } from 'src/schemas/service-call/job.entity';
 import { Repository } from 'typeorm';
 import { PostRequestStructure } from './api/interfaces/post-request.interface';
+import { PaginationRequestStructure } from './api/interfaces/pagination-request.interface';
+import { PaginationModel } from 'src/configs/interfaces/pagination.model';
+import { FilterItemDto } from './dto/filter-item.dto';
+import { FilterWarehouseDto } from './dto/filter-warehouse.dto';
 
 @Injectable()
 export class SapService {
@@ -87,5 +91,131 @@ export class SapService {
     };
 
     return await this.sapAPI.request_PATCH(request);
+  }
+
+  //!--> handle get items
+  async handleGetItems(dto: FilterItemDto, pagination: PaginationModel) {
+    let filterString = '';
+    let counterString = '';
+
+    let queryArray: string[] = [];
+
+    const isEmptyFilter = Object.keys(dto).length === 0;
+
+    if (!isEmptyFilter) {
+      if (dto.ItemCode) {
+        queryArray.push(`substringof('${dto.ItemCode}',ItemCode)`);
+      }
+
+      const queryCount: number = queryArray.length;
+
+      const filterQuery = queryArray.map((eachFilter, index) => {
+        if (queryCount === 1 || index === queryCount - 1) {
+          return eachFilter;
+        } else {
+          return `${eachFilter} and`;
+        }
+      });
+
+      const finalQuery: string = filterQuery.join(' ');
+
+      filterString = '&$filter=' + finalQuery;
+      counterString = '?$filter=' + finalQuery;
+    }
+
+    const pagingData = await this.getItems(
+      pagination.limit,
+      pagination.offset,
+      pagination.page,
+      filterString,
+      counterString,
+    );
+
+    return pagingData;
+  }
+
+  //!--> Get item master data
+  async getItems(
+    limit: number,
+    skip: number,
+    page: number,
+    filter: string,
+    counter: string,
+  ) {
+    const paginationEndpoint: PaginationRequestStructure = {
+      path: 'Items',
+      datalogic:
+        ` & $select=ItemCode,ItemName & $orderby=CreateDate desc` + filter,
+      counterlogic: counter,
+      limit: limit,
+      skip: skip,
+      page: page,
+    };
+
+    return await this.sapAPI.pagination_GET(paginationEndpoint);
+  }
+
+  //!--> handle get items
+  async handleGetWarehouses(
+    dto: FilterWarehouseDto,
+    pagination: PaginationModel,
+  ) {
+    let filterString = '';
+    let counterString = '';
+
+    let queryArray: string[] = [];
+
+    const isEmptyFilter = Object.keys(dto).length === 0;
+
+    if (!isEmptyFilter) {
+      if (dto.WarehouseCode) {
+        queryArray.push(`substringof('${dto.WarehouseCode}',WarehouseCode)`);
+      }
+
+      const queryCount: number = queryArray.length;
+
+      const filterQuery = queryArray.map((eachFilter, index) => {
+        if (queryCount === 1 || index === queryCount - 1) {
+          return eachFilter;
+        } else {
+          return `${eachFilter} and`;
+        }
+      });
+
+      const finalQuery: string = filterQuery.join(' ');
+
+      filterString = '&$filter=' + finalQuery;
+      counterString = '?$filter=' + finalQuery;
+    }
+
+    const pagingData = await this.getWarehouses(
+      pagination.limit,
+      pagination.offset,
+      pagination.page,
+      filterString,
+      counterString,
+    );
+
+    return pagingData;
+  }
+
+  //!--> Get item master data
+  async getWarehouses(
+    limit: number,
+    skip: number,
+    page: number,
+    filter: string,
+    counter: string,
+  ) {
+    const paginationEndpoint: PaginationRequestStructure = {
+      path: 'Warehouses',
+      datalogic: ` & $select=WarehouseCode,WarehouseName` + filter,
+      counterlogic: counter,
+      limit: limit,
+      skip: skip,
+      page: page,
+    };
+
+    return await this.sapAPI.pagination_GET(paginationEndpoint);
   }
 }

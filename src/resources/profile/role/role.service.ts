@@ -63,11 +63,25 @@ export class RoleService {
       dto.name = Like(`%${dto.name}%`);
     }
 
+    let soter: any = null;
+
+    if (dto.action === 'ASC_ID') {
+      soter = { id: 'ASC' };
+    } else if (dto.action === 'DESC_ID') {
+      soter = { id: 'DESC' };
+    } else if (dto.action === 'ASC_RoleName') {
+      soter = { name: 'ASC' };
+    } else if (dto.action === 'DESC_RoleName') {
+      soter = { name: 'DESC' };
+    }
+
+    delete dto.action;
+
     const list = await this.roleRepository.find({
       where: dto,
       take: pagination.limit,
       skip: pagination.offset,
-      order: { id: 'DESC' },
+      order: soter,
     });
 
     return await this.paginationService.pageData(

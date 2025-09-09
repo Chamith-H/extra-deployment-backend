@@ -57,6 +57,12 @@ export class JobController {
     return await this.jobService.getJobs(dto, employeeId);
   }
 
+  //!--> Get non-completes
+  @Get('non-completes')
+  async getNonCompletedJobs(@GetEmployee() employeeId: string) {
+    return await this.jobService.getNonCompletedJobs(employeeId);
+  }
+
   //!--> Get journeys
   @Post('journey-list')
   async getJourneys(
@@ -74,6 +80,7 @@ export class JobController {
   }
 
   //!--> Get job journeys
+  @Public()
   @Post('job-journeys')
   async getJobJourneys(@Body() dto: any) {
     return await this.jobService.getInsideJourneyJobActions(dto.journeyId);

@@ -11,9 +11,9 @@ export class JourneyDocument {
   @Column()
   DocumentType: string;
 
-  @Column()
+  @Column({ nullable: true })
   DocumentPath: string;
 
-  @Column()
+  @Column({ nullable: true })
   DocumentUrl: string;
 }

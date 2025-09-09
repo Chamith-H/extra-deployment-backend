@@ -1,6 +1,20 @@
 import * as moment from 'moment-timezone';
 
 export class DateGeneratorService {
+  //!--> Convert date text to UTC
+  async convert_singleDate(dateText: string): Promise<Date> {
+    const dateUtc = moment.utc(dateText).toDate();
+    return dateUtc;
+  }
+
+  //!--> Get today, current date
+  async getTodayDate() {
+    const dateToday = new Date();
+    const dateString = dateToday.toISOString();
+    const dateUtc = await this.convert_singleDate(dateString);
+    return dateUtc;
+  }
+
   async convertSapDate(date: string, time: number) {
     const year = date.substring(0, 4);
     const month = date.substring(4, 6);

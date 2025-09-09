@@ -6,4 +6,7 @@ export class FilterRoleDto {
 
   @IsOptional()
   status: boolean;
+
+  @IsOptional()
+  action: string;
 }

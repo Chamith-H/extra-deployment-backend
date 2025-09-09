@@ -6,4 +6,10 @@ export class LoginDto {
 
   @IsNotEmpty()
   password: string;
+
+  @IsNotEmpty()
+  deviceID: string;
+
+  @IsNotEmpty()
+  requestFrom: string;
 }

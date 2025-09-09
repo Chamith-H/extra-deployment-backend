@@ -23,6 +23,10 @@ export class AccountService {
 
   //!--> Login
   async login(dto: LoginDto) {
+    if (dto.deviceID === 'EMPTY') {
+      throw new UnauthorizedException('Cannot find your device!.');
+    }
+
     const user = await this.userRepository.findOne({
       where: { employId: dto.username },
       relations: ['role'],
@@ -45,6 +49,24 @@ export class AccountService {
       user.role.accesses.length === 0
     ) {
       throw new UnauthorizedException('Unauthorized access!');
+    }
+
+    //
+    if (dto.requestFrom === 'MOBILE') {
+      if (user.deviceId === '' || !user.deviceId) {
+        await this.userRepository.update(
+          { id: user.id },
+          {
+            deviceId: dto.deviceID,
+          },
+        );
+      } else {
+        if (user.deviceId !== dto.deviceID) {
+          throw new UnauthorizedException(
+            'This account is already registered with another device!.',
+          );
+        }
+      }
     }
 
     const accessNumbers = user.role.accesses.map(
@@ -87,6 +109,10 @@ export class AccountService {
       user.role.accesses.length === 0
     ) {
       throw new UnauthorizedException('Unauthorized access!');
+    }
+
+    if (!user.deviceId || user.deviceId === '') {
+      throw new UnauthorizedException('Please login with a valid device!');
     }
 
     const accessNumbers = user.role.accesses.map(

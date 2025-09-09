@@ -14,9 +14,9 @@ export class JobDocument {
   @Column()
   DocumentType: string;
 
-  @Column()
+  @Column({ nullable: true })
   DocumentPath: string;
 
-  @Column()
+  @Column({ nullable: true })
   DocumentUrl: string;
 }

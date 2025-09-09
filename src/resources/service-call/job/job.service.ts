@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Job } from 'src/schemas/service-call/job.entity';
 import {
@@ -42,6 +42,9 @@ import { User } from 'src/schemas/profile/user.entity';
 @Injectable()
 export class JobService {
   constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+
     @InjectRepository(Job)
     private readonly jobRepository: Repository<Job>,
 
@@ -156,6 +159,16 @@ export class JobService {
       .getMany();
 
     return data;
+  }
+
+  //!--> Get non completed jobs
+  async getNonCompletedJobs(employeeId: string) {
+    return this.jobRepository.find({
+      where: {
+        Technician: Number(employeeId),
+        FinalStatus: Not('Completed and Checkout'),
+      },
+    });
   }
 
   //!--> Get journeys
@@ -315,7 +328,6 @@ export class JobService {
 
   //!--> Update status
   async updateStatus(dto: StatusUpdateDto) {
-    console.log(dto);
     const jobJourneyDocumnent = {
       JourneyID: dto.JourneyID,
       JobID: dto.JobID,
@@ -742,44 +754,14 @@ export class JobService {
 
   @Cron('*/2 * * * *')
   handleCron() {
-    this.getServiceCallSchedulings();
+    // this.getServiceCallSchedulings();
     // Cron schedule
   }
 
   //!--> Get pagination
   async getAll(dto: FilterWebJobDto, pagination: PaginationModel) {
-    const where: FindOptionsWhere<Job> = {};
-    if (dto.jobId) {
-      where.JobID = Like(`%${dto.jobId}%`);
-    }
-    if (dto.technician) {
-      where.Technician = dto.technician;
-    }
-    if (dto.priority) {
-      where.Priority = Like(`%${dto.priority}%`);
-    }
-    if (dto.finalStatus) {
-      where.FinalStatus = Like(`%${dto.finalStatus}%`);
-    }
-    if (dto.startDate && dto.endDate) {
-      where.PlannedStartDateTime = MoreThanOrEqual(`${dto.startDate}T00:00:00`);
-      where.PlannedEndDateTime = LessThanOrEqual(`${dto.endDate}T23:59:59`);
-    } else if (dto.startDate) {
-      where.PlannedStartDateTime = Between(
-        `${dto.startDate}T00:00:00`,
-        `${dto.startDate}T23:59:59`,
-      );
-    } else if (dto.endDate) {
-      where.PlannedEndDateTime = Between(
-        `${dto.endDate}T00:00:00`,
-        `${dto.endDate}T23:59:59`,
-      );
-    }
-
     const query = this.jobRepository
       .createQueryBuilder('job')
-      .leftJoin(User, 'user', 'CAST(job.Technician AS varchar) = user.employId')
-      .addSelect(['user.name AS technicianName'])
       .addSelect([
         'job.JobID AS JobID',
         'job.Priority AS Priority',
@@ -825,10 +807,60 @@ export class JobService {
         'job.Subject AS Subject',
         'job.Technician AS Technician',
         'job.id AS id',
-      ])
-      .where(where);
+      ]);
 
-    // sorting (same as before)
+    // ✅ Apply filters properly
+    if (dto.jobId) {
+      query.andWhere('job.JobID LIKE :jobId', { jobId: `%${dto.jobId}%` });
+    }
+    if (dto.technician) {
+      const users = await this.userRepository.find({
+        where: [
+          { employId: Like(`%${dto.technician}%`) },
+          { name: Like(`%${dto.technician}%`) },
+        ],
+      });
+
+      console.log(users);
+
+      if (users && users.length !== 0) {
+        const userIds = users.map((usr: any) => {
+          return Number(usr.employId);
+        });
+
+        query.andWhere('job.Technician IN (:...userIds)', { userIds });
+      }
+    }
+    if (dto.priority) {
+      query.andWhere('job.Priority LIKE :priority', {
+        priority: `%${dto.priority}%`,
+      });
+    }
+    if (dto.finalStatus) {
+      query.andWhere('job.FinalStatus LIKE :finalStatus', {
+        finalStatus: `%${dto.finalStatus}%`,
+      });
+    }
+    if (dto.startDate && dto.endDate) {
+      query.andWhere('job.PlannedStartDateTime >= :start', {
+        start: `${dto.startDate}T00:00:00`,
+      });
+      query.andWhere('job.PlannedEndDateTime <= :end', {
+        end: `${dto.endDate}T23:59:59`,
+      });
+    } else if (dto.startDate) {
+      query.andWhere('job.PlannedStartDateTime BETWEEN :start AND :end', {
+        start: `${dto.startDate}T00:00:00`,
+        end: `${dto.startDate}T23:59:59`,
+      });
+    } else if (dto.endDate) {
+      query.andWhere('job.PlannedEndDateTime BETWEEN :start AND :end', {
+        start: `${dto.endDate}T00:00:00`,
+        end: `${dto.endDate}T23:59:59`,
+      });
+    }
+
+    // ✅ Sorting (your same logic)
     if (dto.action === 'ASC_ID') {
       query.orderBy('job.id', 'ASC');
     } else if (dto.action === 'DESC_ID') {
@@ -837,48 +869,37 @@ export class JobService {
       query.orderBy('job.JobID', 'ASC');
     } else if (dto.action === 'DESC_JobID') {
       query.orderBy('job.JobID', 'DESC');
-    } else if (dto.action === 'ASC_Priority') {
-      query.orderBy(
-        `CASE 
-        WHEN job.Priority = 'Low' THEN 1
-        WHEN job.Priority = 'Medium' THEN 2
-        WHEN job.Priority = 'High' THEN 3
-        ELSE 4
-      END`,
-        'ASC',
-      );
-    } else if (dto.action === 'DESC_Priority') {
-      query.orderBy(
-        `CASE 
-        WHEN job.Priority = 'High' THEN 1
-        WHEN job.Priority = 'Medium' THEN 2
-        WHEN job.Priority = 'Low' THEN 3
-        ELSE 4
-      END`,
-        'ASC',
-      );
-    } else if (dto.action === 'ASC_SDate') {
-      query.orderBy('job.PlannedStartDateTime', 'ASC');
-    } else if (dto.action === 'DESC_SDate') {
-      query.orderBy('job.PlannedStartDateTime', 'DESC');
-    } else if (dto.action === 'ASC_EDate') {
-      query.orderBy('job.PlannedEndDateTime', 'ASC');
-    } else if (dto.action === 'DESC_EDate') {
-      query.orderBy('job.PlannedEndDateTime', 'DESC');
     } else {
       query.orderBy('job.id', 'DESC');
     }
 
+    // ✅ Pagination (now works)
     query.take(pagination.limit).skip(pagination.offset);
 
-    const list = await query.getRawMany(); // ✅ because we used addSelect alias
+    let [list, count] = await query.getManyAndCount();
 
-    return await this.paginationService.pageData(
-      list,
-      this.jobRepository,
-      where,
-      pagination,
-    );
+    const allUsers = await this.userRepository.find();
+
+    if (list && list.length !== 0) {
+      const listMapper = list.map((lst: any) => {
+        const technician = `${lst.Technician}`;
+
+        const user = allUsers.find((usr: any) => usr.employId === technician);
+        lst.technicianName = user?.name;
+        return lst;
+      });
+
+      if (listMapper) {
+        list = listMapper;
+      }
+    }
+
+    return {
+      data: list,
+      totalCount: count,
+      pageCount: Math.ceil(count / pagination.limit),
+      page: pagination.page,
+    };
   }
 
   //!--> Get job actions
@@ -901,55 +922,12 @@ export class JobService {
 
   //!--> Get Journey pagination
   async getAllJourneys(dto: FilterWebJourneyDto, pagination: PaginationModel) {
-    const where: FindOptionsWhere<Journey> = {};
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+    const offset = (page - 1) * limit;
 
-    if (dto.journeyID) {
-      where.JourneyID = Like(`%${dto.journeyID}%`);
-    }
-    if (dto.technician) {
-      where.Technician = dto.technician; // exact match (number)
-    }
-    if (dto.vehicleType) {
-      where.VehicleType = Like(`%${dto.vehicleType}%`);
-    }
-    if (dto.vahicleNumber) {
-      where.StartVehicleNumber = Like(`%${dto.vahicleNumber}%`);
-      // 👉 if you also want EndVehicleNumber filter, add OR condition with QB instead of here
-    }
-    if (dto.status) {
-      // Only if you actually have a Status column in journeys
-
-      if (dto.status === 'Ongoing') {
-        where.EndDateTime = '';
-      } else {
-        where.EndDateTime = Not('');
-      }
-    }
-
-    // Date filter
-    if (dto.startDate && dto.endDate) {
-      where.StartDateTime = MoreThanOrEqual(`${dto.startDate}T00:00:00`);
-      where.EndDateTime = LessThanOrEqual(`${dto.endDate}T23:59:59`);
-    } else if (dto.startDate) {
-      where.StartDateTime = Between(
-        `${dto.startDate}T00:00:00`,
-        `${dto.startDate}T23:59:59`,
-      );
-    } else if (dto.endDate) {
-      where.EndDateTime = Between(
-        `${dto.endDate}T00:00:00`,
-        `${dto.endDate}T23:59:59`,
-      );
-    }
-
-    const query = this.journeyRepository
+    const qb = this.journeyRepository
       .createQueryBuilder('journey')
-      .leftJoin(
-        User,
-        'user',
-        'CAST(journey.Technician AS varchar) = user.employId',
-      )
-      .addSelect(['user.name AS technicianName'])
       .addSelect([
         'journey.id AS id',
         'journey.JourneyID AS JourneyID',
@@ -967,39 +945,123 @@ export class JobService {
         'journey.EndLat AS EndLat',
         'journey.EndLong AS EndLong',
         'journey.CreatedBy AS CreatedBy',
-      ])
-      .where(where);
+      ]);
 
-    // Sorting
-    if (dto.action === 'ASC_ID') {
-      query.orderBy('journey.id', 'ASC');
-    } else if (dto.action === 'DESC_ID') {
-      query.orderBy('journey.id', 'DESC');
-    } else if (dto.action === 'ASC_JourneyID') {
-      query.orderBy('journey.JourneyID', 'ASC');
-    } else if (dto.action === 'DESC_JourneyID') {
-      query.orderBy('journey.JourneyID', 'DESC');
-    } else if (dto.action === 'ASC_SDate') {
-      query.orderBy('journey.StartDateTime', 'ASC');
-    } else if (dto.action === 'DESC_SDate') {
-      query.orderBy('journey.StartDateTime', 'DESC');
-    } else if (dto.action === 'ASC_EDate') {
-      query.orderBy('journey.EndDateTime', 'ASC');
-    } else if (dto.action === 'DESC_EDate') {
-      query.orderBy('journey.EndDateTime', 'DESC');
-    } else {
-      query.orderBy('journey.id', 'DESC');
+    // filters (same as before) ...
+    if (dto.journeyID) {
+      qb.andWhere('journey.JourneyID LIKE :jid', { jid: `%${dto.journeyID}%` });
+    }
+    if (dto.technician) {
+      const users = await this.userRepository.find({
+        where: [
+          { employId: Like(`%${dto.technician}%`) },
+          { name: Like(`%${dto.technician}%`) },
+        ],
+      });
+
+      if (users && users.length !== 0) {
+        const userIds = users.map((usr: any) => {
+          return Number(usr.employId);
+        });
+
+        qb.andWhere('journey.Technician IN (:...userIds)', { userIds });
+      }
+    }
+    if (dto.vehicleType) {
+      qb.andWhere('journey.VehicleType LIKE :vt', {
+        vt: `%${dto.vehicleType}%`,
+      });
+    }
+    if (dto.vahicleNumber) {
+      qb.andWhere(
+        '(journey.StartVehicleNumber LIKE :vn OR journey.EndVehicleNumber LIKE :vn)',
+        { vn: `%${dto.vahicleNumber}%` },
+      );
+    }
+    if (dto.status === 'Ongoing') {
+      qb.andWhere("(journey.EndDateTime IS NULL OR journey.EndDateTime = '')");
+    } else if (dto.status) {
+      qb.andWhere(
+        "(journey.EndDateTime IS NOT NULL AND journey.EndDateTime <> '')",
+      );
     }
 
-    query.take(pagination.limit).skip(pagination.offset);
+    // date filters
+    if (dto.startDate && dto.endDate) {
+      qb.andWhere('journey.StartDateTime >= :start', {
+        start: `${dto.startDate}T00:00:00`,
+      }).andWhere('journey.EndDateTime <= :end', {
+        end: `${dto.endDate}T23:59:59`,
+      });
+    } else if (dto.startDate) {
+      qb.andWhere('journey.StartDateTime BETWEEN :s1 AND :s2', {
+        s1: `${dto.startDate}T00:00:00`,
+        s2: `${dto.startDate}T23:59:59`,
+      });
+    } else if (dto.endDate) {
+      qb.andWhere('journey.EndDateTime BETWEEN :e1 AND :e2', {
+        e1: `${dto.endDate}T00:00:00`,
+        e2: `${dto.endDate}T23:59:59`,
+      });
+    }
 
-    const list = await query.getRawMany();
+    // sorting
+    switch (dto.action) {
+      case 'ASC_ID':
+        qb.orderBy('journey.id', 'ASC');
+        break;
+      case 'DESC_ID':
+        qb.orderBy('journey.id', 'DESC');
+        break;
+      case 'ASC_JourneyID':
+        qb.orderBy('journey.JourneyID', 'ASC');
+        break;
+      case 'DESC_JourneyID':
+        qb.orderBy('journey.JourneyID', 'DESC');
+        break;
+      case 'ASC_SDate':
+        qb.orderBy('journey.StartDateTime', 'ASC');
+        break;
+      case 'DESC_SDate':
+        qb.orderBy('journey.StartDateTime', 'DESC');
+        break;
+      case 'ASC_EDate':
+        qb.orderBy('journey.EndDateTime', 'ASC');
+        break;
+      case 'DESC_EDate':
+        qb.orderBy('journey.EndDateTime', 'DESC');
+        break;
+      default:
+        qb.orderBy('journey.id', 'DESC');
+    }
 
-    return await this.paginationService.pageData(
-      list,
-      this.journeyRepository,
-      where,
-      pagination,
-    );
+    // ✅ pagination
+    qb.skip(offset).take(limit);
+
+    // use raw results to get alias fields
+    let [list, total] = await qb.getManyAndCount();
+
+    const allUsers = await this.userRepository.find();
+
+    if (list && list.length !== 0) {
+      const listMapper = list.map((lst: any) => {
+        const technician = `${lst.Technician}`;
+
+        const user = allUsers.find((usr: any) => usr.employId === technician);
+        lst.technicianName = user?.name;
+        return lst;
+      });
+
+      if (listMapper) {
+        list = listMapper;
+      }
+    }
+
+    return {
+      data: list,
+      totalCount: total,
+      pageCount: Math.ceil(total / limit),
+      page,
+    };
   }
 }

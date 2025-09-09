@@ -4,7 +4,6 @@ import { AppService } from './app.service';
 import { AuthModule } from './resources/auth/auth.module';
 import { ProfileModule } from './resources/profile/profile.module';
 import { ServiceCallModule } from './resources/service-call/service-call.module';
-import { SettingModule } from './resources/setting/setting.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { IntegrationModule } from './resources/integration/integration.module';
@@ -40,7 +39,6 @@ import { HomeModule } from './resources/home/home.module';
     AuthModule,
     ProfileModule,
     ServiceCallModule,
-    SettingModule,
     IntegrationModule,
     HomeModule,
   ],

@@ -40,6 +40,12 @@ export class User {
   @Column()
   otpExpired: boolean;
 
+  @Column({ length: 1000, default: '' })
+  socketId: string;
+
+  @Column({ length: 1000, default: '' })
+  deviceId: string;
+
   @Column({ default: true })
   status: boolean;
 }

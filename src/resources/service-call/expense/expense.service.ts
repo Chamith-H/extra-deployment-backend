@@ -3,7 +3,7 @@ import { ExpenseDocumentDto } from './dto/expense-document.dto';
 import { ExpenseDto } from './dto/expense.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Expense } from 'src/schemas/expense/expense.entity';
-import { Between, FindOptionsWhere, Like, Not, Repository } from 'typeorm';
+import { Between, FindOptionsWhere, In, Like, Not, Repository } from 'typeorm';
 import { ExpenseDocument } from 'src/schemas/expense/expense-document.entity';
 import { SelectedExpenseDto } from './dto/selected-expense.dto';
 import { FilterDateDto } from '../job/dto/filter-job.dto';
@@ -144,13 +144,24 @@ export class ExpenseService {
       );
     }
     if (dto.technician) {
-      // since CreatedBy is string, we’ll filter via join instead of here
+      const users = await this.userRepository.find({
+        where: [
+          { employId: Like(`%${dto.technician}%`) },
+          { name: Like(`%${dto.technician}%`) },
+        ],
+      });
+
+      if (users && users.length !== 0) {
+        const userIds = users.map((usr: any) => {
+          return usr.employId;
+        });
+
+        where.CreatedBy = In(userIds);
+      }
     }
 
     const query = this.expenseRepository
       .createQueryBuilder('expense')
-      .leftJoin(User, 'user', 'expense.CreatedBy = user.employId')
-      .addSelect(['user.name AS createdByName'])
       .addSelect([
         'expense.id AS id',
         'expense.ExpenseID AS ExpenseID',
@@ -188,14 +199,34 @@ export class ExpenseService {
 
     query.take(pagination.limit).skip(pagination.offset);
 
-    const list = await query.getRawMany();
+    let list = await query.getRawMany();
 
-    return await this.paginationService.pageData(
-      list,
-      this.expenseRepository,
-      where,
-      pagination,
-    );
+    const count = await this.expenseRepository.count({
+      where: where,
+    });
+
+    const allUsers = await this.userRepository.find();
+
+    if (list && list.length !== 0) {
+      const listMapper = list.map((lst: any) => {
+        const technician = `${lst.CreatedBy}`;
+
+        const user = allUsers.find((usr: any) => usr.employId === technician);
+        lst.technicianName = user.name;
+        return lst;
+      });
+
+      if (listMapper) {
+        list = listMapper;
+      }
+    }
+
+    return {
+      data: list,
+      totalCount: count,
+      pageCount: Math.ceil(count / pagination.limit),
+      page: pagination.page,
+    };
   }
 
   //!--> Get single expense details

@@ -12,6 +12,11 @@ import { register_userPassword } from 'src/configs/templates/email.template';
 import * as cheerio from 'cheerio';
 import { EmailSenderService } from 'src/shared/email-sender.service';
 import { EmailModel } from 'src/configs/interfaces/email.model';
+import { WebsocketService } from 'src/resources/integration/socket/websocket.service';
+import { LogDto } from './dto/LogDto';
+import { ErrorDto } from './dto/error.dto';
+import { ErrorLog } from 'src/schemas/common/error-log.entity';
+import { DateGeneratorService } from 'src/shared/date-generator.service';
 
 @Injectable()
 export class UserService {
@@ -19,8 +24,13 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
 
+    @InjectRepository(ErrorLog)
+    private readonly errorLogRepository: Repository<ErrorLog>,
+
     private readonly paginationService: PaginationService,
     private readonly emailSenderService: EmailSenderService,
+    private readonly websocketService: WebsocketService,
+    private readonly dateGenerator: DateGeneratorService,
   ) {}
 
   //!--> Create
@@ -61,6 +71,8 @@ export class UserService {
       password: encryptedPassword,
       otp: '000000',
       otpExpired: true,
+      socketId: '',
+      deviceId: '',
     };
     const role = this.userRepository.create(userDoc);
     const response = await this.userRepository.save(role);
@@ -93,12 +105,34 @@ export class UserService {
       dto.name = Like(`%${dto.name}%`);
     }
 
+    if (dto.employId) {
+      dto.employId = Like(`%${dto.employId}%`);
+    }
+
+    if (dto.role) {
+      dto.role = { id: dto.role };
+    }
+
+    let soter: any = null;
+
+    if (dto.action === 'ASC_ID') {
+      soter = { id: 'ASC' };
+    } else if (dto.action === 'DESC_ID') {
+      soter = { id: 'DESC' };
+    } else if (dto.action === 'ASC_UserName') {
+      soter = { name: 'ASC' };
+    } else if (dto.action === 'DESC_UserName') {
+      soter = { name: 'DESC' };
+    }
+
+    delete dto.action;
+
     const list = await this.userRepository.find({
       where: dto,
       relations: ['role'],
       take: pagination.limit,
       skip: pagination.offset,
-      order: { id: 'DESC' },
+      order: soter,
     });
 
     return await this.paginationService.pageData(
@@ -124,5 +158,51 @@ export class UserService {
     return this.userRepository.find({
       select: ['name', 'employId'],
     });
+  }
+
+  //!--> Get db log
+  async getDbLog(dto: LogDto) {
+    return await this.websocketService.getDbReport(dto);
+  }
+
+  //!--> Get error log
+  async getErrorLog(employeeId: string) {
+    const errorDocs = await this.errorLogRepository.find({
+      where: { user: employeeId },
+      order: { id: 'DESC' },
+    });
+
+    return errorDocs;
+  }
+
+  //!--> Create error log
+  async createErrorLog(dto: ErrorDto) {
+    const currentDate = await this.dateGenerator.getTodayDate();
+
+    const errorDoc = {
+      ...dto,
+      date: currentDate,
+    };
+
+    const errorData = this.errorLogRepository.create(errorDoc);
+    const response = await this.errorLogRepository.save(errorData);
+
+    if (response) {
+      return {
+        message: 'Error created successfully!',
+      };
+    }
+  }
+
+  //!--> Manually log out
+  async manuallyLogout(employeeId: string) {
+    const removeDeviceId = await this.userRepository.update(
+      { employId: employeeId },
+      { deviceId: '' },
+    );
+
+    if (removeDeviceId) {
+      return await this.websocketService.handleLogout(employeeId);
+    }
   }
 }
