@@ -10,22 +10,22 @@ export class ErrorLog {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   user: string;
 
-  @Column()
+  @Column({ nullable: true })
   category: string;
 
-  @Column()
+  @Column({ nullable: true })
   type: string;
 
-  @Column()
+  @Column({ nullable: true })
   target: string;
 
-  @Column({ type: 'nvarchar', length: 1000 })
+  @Column({ type: 'nvarchar', length: 1000, nullable: true })
   error: string;
 
-  @Column({ type: 'nvarchar', length: 4000 })
+  @Column({ type: 'nvarchar', length: 4000, nullable: true })
   body: string;
 
   @CreateDateColumn({ type: 'datetime' })
