@@ -88,4 +88,11 @@ export class UserController {
   async setManuallyLogout(@Body() dto: UserActionDto) {
     return await this.userService.manuallyLogout(dto.employId);
   }
+
+  //!--> Clear login device
+  @Public()
+  @Get('clear-id/:id')
+  async clearLoginDevice(@Param('id') id: string) {
+    return await this.userService.clearLoginDevice(Number(id));
+  }
 }

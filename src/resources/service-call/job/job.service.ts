@@ -38,6 +38,9 @@ import { PaginationModel } from 'src/configs/interfaces/pagination.model';
 import { PaginationService } from 'src/shared/table-paginator.service';
 import { FilterWebJourneyDto } from './dto/filter-web-journey.dto';
 import { User } from 'src/schemas/profile/user.entity';
+import { SparePart } from 'src/schemas/service-call/spare-part.entity';
+import { SparePartLine } from 'src/schemas/service-call/spare-prt-line.entity';
+import { SparePartDto } from './dto/spare-part.dto';
 
 @Injectable()
 export class JobService {
@@ -59,6 +62,12 @@ export class JobService {
 
     @InjectRepository(Journey)
     private readonly journeyRepository: Repository<Journey>,
+
+    @InjectRepository(SparePart)
+    private readonly sparePartRepository: Repository<SparePart>,
+
+    @InjectRepository(SparePartLine)
+    private readonly sparePartLineRepository: Repository<SparePartLine>,
 
     @InjectRepository(NotificationT)
     private readonly notifyRepository: Repository<NotificationT>,
@@ -754,7 +763,7 @@ export class JobService {
 
   @Cron('*/2 * * * *')
   handleCron() {
-    this.getServiceCallSchedulings();
+    // this.getServiceCallSchedulings();
   }
 
   //!--> Get pagination
@@ -1062,5 +1071,96 @@ export class JobService {
       pageCount: Math.ceil(total / limit),
       page,
     };
+  }
+
+  //!--> Create sparepart
+  async createSparePartReuest(dto: SparePartDto, employee: number) {
+    const lineMapper = await Promise.all(
+      dto.lines.map(async (dLine: any) => {
+        const sparePartLine = {
+          RequestId: dto.RequestId,
+          ItemCode: dLine.ItemCode,
+          ItemName: dLine.ItemName,
+          Quantity: dLine.Quantity,
+          Consume: '',
+        };
+
+        const spareLine = this.sparePartLineRepository.create(sparePartLine);
+        const response = await this.sparePartLineRepository.save(spareLine);
+
+        if (response) {
+          return {
+            response,
+          };
+        }
+      }),
+    );
+
+    if (lineMapper) {
+      const partRequest = {
+        JobID: dto.JobID,
+        Technician: employee,
+        CreatedDate: dto.CreatedDate,
+        RequestId: dto.RequestId,
+        ErpCode: '',
+        Warehouse: dto.Warehouse,
+        Status: 'Open',
+      };
+
+      const spareHead = this.sparePartRepository.create(partRequest);
+      const response = await this.sparePartRepository.save(spareHead);
+
+      if (response) {
+        return {
+          message: 'Spare part request created successfully!',
+        };
+      }
+    }
+  }
+
+  //!--> Get spare part requests
+  async getSparePartRequests(jobId: string, employId: number) {
+    const spareParts = await this.sparePartRepository.find({
+      where: { Technician: employId, JobID: jobId },
+    });
+
+    if (spareParts && spareParts.length === 0) {
+      return [];
+    } else {
+      const sparePartMapper = await Promise.all(
+        spareParts.map(async (sPart: any) => {
+          const sparePartRows = await this.sparePartLineRepository.find({
+            where: { RequestId: sPart.RequestId },
+          });
+
+          const parts = {
+            ...sPart,
+            lines: sparePartRows,
+          };
+
+          return parts;
+        }),
+      );
+
+      return sparePartMapper;
+    }
+  }
+
+  //!--> Update consumeValues
+  async updateConsumeValues(itemArr: any[]) {
+    const consumeMapper = await Promise.all(
+      itemArr.map(async (iArr: any) => {
+        const updater = await this.sparePartLineRepository.update(
+          { id: iArr.id },
+          { Consume: iArr.Consume },
+        );
+
+        return updater;
+      }),
+    );
+
+    if (consumeMapper) {
+      return { message: 'Consumed quantity updated successfully!' };
+    }
   }
 }

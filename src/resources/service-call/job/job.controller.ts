@@ -21,6 +21,7 @@ import { PaginationModel } from 'src/configs/interfaces/pagination.model';
 import { FilterObject } from 'src/configs/decorators/filter.decorator';
 import { FilterWebJobDto } from './dto/filter-web-job.dto';
 import { FilterWebJourneyDto } from './dto/filter-web-journey.dto';
+import { SparePartDto } from './dto/spare-part.dto';
 
 @Controller('job')
 export class JobController {
@@ -168,6 +169,35 @@ export class JobController {
   @Post('update-count')
   async updateSampleCount(@Body() dto: SampleCountDto) {
     return await this.jobService.updateSampleCount(dto);
+  }
+
+  //!--> Crete spare part
+  @Post('create-part')
+  async createPartRequest(
+    @Body() dto: SparePartDto,
+    @GetEmployee() employeeId: string,
+  ) {
+    return await this.jobService.createSparePartReuest(dto, Number(employeeId));
+  }
+
+  //!--> Get spare part
+  @Get('get-parts/:id')
+  async getPartRequests(
+    @Param('id') id: string,
+    @GetEmployee() employeeId: string,
+  ) {
+    const parts = await this.jobService.getSparePartRequests(
+      id,
+      Number(employeeId),
+    );
+
+    return parts;
+  }
+
+  //!--> Update consume
+  @Post('update-consume')
+  async updateConsumeCount(@Body() dto: any) {
+    return await this.jobService.updateConsumeValues(dto.items);
   }
 
   //!--> Get schedulings from SAP

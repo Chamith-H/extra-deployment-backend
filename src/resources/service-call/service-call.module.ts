@@ -16,6 +16,8 @@ import { IntegrationModule } from '../integration/integration.module';
 import { DateGeneratorService } from 'src/shared/date-generator.service';
 import { NotificationT } from 'src/schemas/setting/notification.entity';
 import { User } from 'src/schemas/profile/user.entity';
+import { SparePart } from 'src/schemas/service-call/spare-part.entity';
+import { SparePartLine } from 'src/schemas/service-call/spare-prt-line.entity';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { User } from 'src/schemas/profile/user.entity';
       Expense,
       NotificationT,
       User,
+      SparePart,
+      SparePartLine,
     ]),
     IntegrationModule,
   ],

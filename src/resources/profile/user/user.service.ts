@@ -205,4 +205,16 @@ export class UserService {
       return await this.websocketService.handleLogout(employeeId);
     }
   }
+
+  //!--> Clear login device
+  async clearLoginDevice(id: number) {
+    const removeDeviceId = await this.userRepository.update(
+      { id: id },
+      { deviceId: '' },
+    );
+
+    if (removeDeviceId) {
+      return { message: 'Login device cleared successfully!' };
+    }
+  }
 }
