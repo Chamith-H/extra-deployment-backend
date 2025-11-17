@@ -183,14 +183,8 @@ export class JobController {
 
   //!--> Get spare part
   @Get('get-parts/:id')
-  async getPartRequests(
-    @Param('id') id: string,
-    @GetEmployee() employeeId: string,
-  ) {
-    const parts = await this.jobService.getSparePartRequests(
-      id,
-      Number(employeeId),
-    );
+  async getPartRequests(@Param('id') id: string) {
+    const parts = await this.jobService.getSparePartRequests(id);
 
     return parts;
   }

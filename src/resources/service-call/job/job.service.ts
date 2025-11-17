@@ -1157,9 +1157,9 @@ export class JobService {
   }
 
   //!--> Get spare part requests
-  async getSparePartRequests(jobId: string, employId: number) {
+  async getSparePartRequests(jobId: string) {
     const spareParts = await this.sparePartRepository.find({
-      where: { Technician: employId, JobID: jobId },
+      where: { JobID: jobId },
     });
 
     if (spareParts && spareParts.length === 0) {
