@@ -6,6 +6,7 @@ import { GetRequestStructure } from './interfaces/get-request.interface';
 import { PaginationRequestStructure } from './interfaces/pagination-request.interface';
 import { PatchRequestStructure } from './interfaces/patch-request.interface';
 import { PostRequestStructure } from './interfaces/post-request.interface';
+import { Pagination2RequestStructure } from './interfaces/pagination2-request.interface';
 
 @Injectable()
 export class B1ApiProcess {
@@ -144,6 +145,36 @@ export class B1ApiProcess {
 
     return {
       data: dataCollection,
+      dataCount: count,
+      pageCount: Math.ceil(count / requestOptions.limit),
+      currentPage: requestOptions.page,
+    };
+  }
+
+  //!--> @Pagination2()
+  //!--> Pagination2 request to SAP........................................................|
+  async pagination2_GET(requestOptions: Pagination2RequestStructure) {
+    const data_endpoint: PostRequestStructure = {
+      path:
+        requestOptions.path +
+        `?$top=${requestOptions.limit}&$skip=${requestOptions.skip}`,
+      body: requestOptions.body,
+    };
+
+    const dataCollection: any = await this.request_POST(data_endpoint);
+
+    const data_endpointCount: PostRequestStructure = {
+      path: requestOptions.counterpath,
+      body: requestOptions.body,
+    };
+
+    const dataCollectionCount: any =
+      await this.request_POST(data_endpointCount);
+
+    const count = dataCollectionCount.value[0].TotalCount || 0;
+
+    return {
+      data: dataCollection.value,
       dataCount: count,
       pageCount: Math.ceil(count / requestOptions.limit),
       currentPage: requestOptions.page,

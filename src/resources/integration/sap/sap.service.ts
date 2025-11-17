@@ -10,6 +10,8 @@ import { PaginationRequestStructure } from './api/interfaces/pagination-request.
 import { PaginationModel } from 'src/configs/interfaces/pagination.model';
 import { FilterItemDto } from './dto/filter-item.dto';
 import { FilterWarehouseDto } from './dto/filter-warehouse.dto';
+import { FilterHistoryDto } from './dto/filter-history.dto';
+import { Pagination2RequestStructure } from './api/interfaces/pagination2-request.interface';
 
 @Injectable()
 export class SapService {
@@ -217,5 +219,37 @@ export class SapService {
     };
 
     return await this.sapAPI.pagination_GET(paginationEndpoint);
+  }
+
+  //!--> Get history
+  async getHistory(dto: FilterHistoryDto, pagination: PaginationModel) {
+    const paginationEndpoint: Pagination2RequestStructure = {
+      path: "SQLQueries('SERApp_history')/List",
+      counterpath: "SQLQueries('SERApp_history_count')/List",
+      body: {
+        ParamList: `fromDate='${dto.fromDate}'&toDate='${dto.toDate}'&customer='${dto.customer}'`,
+      },
+      limit: pagination.limit,
+      skip: pagination.offset,
+      page: pagination.page,
+    };
+
+    return await this.sapAPI.pagination2_GET(paginationEndpoint);
+  }
+
+  //!--> Get customers
+  async getCustomers(employId: number, pagination: PaginationModel) {
+    const paginationEndpoint: Pagination2RequestStructure = {
+      path: "SQLQueries('SERApp_customers')/List",
+      counterpath: "SQLQueries('SERApp_customers_count')/List",
+      body: {
+        ParamList: `user=${employId}`,
+      },
+      limit: pagination.limit,
+      skip: pagination.offset,
+      page: pagination.page,
+    };
+
+    return await this.sapAPI.pagination2_GET(paginationEndpoint);
   }
 }

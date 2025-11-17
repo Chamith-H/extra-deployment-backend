@@ -22,6 +22,7 @@ import { FilterObject } from 'src/configs/decorators/filter.decorator';
 import { FilterWebJobDto } from './dto/filter-web-job.dto';
 import { FilterWebJourneyDto } from './dto/filter-web-journey.dto';
 import { SparePartDto } from './dto/spare-part.dto';
+import { FilterServiceDto } from './dto/filter-service.dto';
 
 @Controller('job')
 export class JobController {
@@ -198,6 +199,21 @@ export class JobController {
   @Post('update-consume')
   async updateConsumeCount(@Body() dto: any) {
     return await this.jobService.updateConsumeValues(dto.items);
+  }
+
+  //!--> Get business partners
+  @Get('bps')
+  async getBusinessPartners(@GetEmployee() employeeId: string) {
+    return await this.jobService.get_businessPartners(Number(employeeId));
+  }
+
+  //!--> Get service history
+  @Post('service-history')
+  async getServiceHistory(
+    @Body() dto: FilterServiceDto,
+    @GetEmployee() employeeId: string,
+  ) {
+    return await this.jobService.getHistory(dto, employeeId);
   }
 
   //!--> Get schedulings from SAP

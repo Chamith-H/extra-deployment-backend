@@ -41,6 +41,7 @@ import { User } from 'src/schemas/profile/user.entity';
 import { SparePart } from 'src/schemas/service-call/spare-part.entity';
 import { SparePartLine } from 'src/schemas/service-call/spare-prt-line.entity';
 import { SparePartDto } from './dto/spare-part.dto';
+import { FilterServiceDto } from './dto/filter-service.dto';
 
 @Injectable()
 export class JobService {
@@ -759,6 +760,43 @@ export class JobService {
     } else {
       return 'Nothing to sync';
     }
+  }
+
+  //!--> Get business partners
+  async get_businessPartners(employId: number) {
+    const partners = await this.jobRepository
+      .createQueryBuilder('job')
+      .select('job.BPCode', 'value')
+      .addSelect('MIN(job.Customer)', 'label')
+      .where('job.BPCode IS NOT NULL')
+      .andWhere('job.Technician = :employId', { employId })
+      .andWhere('job.FinalStatus = :statusF', {
+        statusF: 'Completed and Checkout',
+      })
+      .groupBy('job.BPCode')
+      .getRawMany();
+
+    return partners;
+  }
+
+  //!--> Get jobs by pagination
+  async getHistory(dto: FilterServiceDto, employeeId: string) {
+    const { year, month, bp } = dto;
+
+    const data = await this.jobRepository
+      .createQueryBuilder('job')
+      .where(
+        `YEAR(CONVERT(date, job.CreationDate, 120)) = :year AND MONTH(CONVERT(date, job.CreationDate, 120)) = :month AND job.Technician = :technician AND job.BPCode = :bpCode`,
+        {
+          year: Number(year),
+          month: Number(month),
+          technician: Number(employeeId),
+          bpCode: bp,
+        },
+      )
+      .getMany();
+
+    return data;
   }
 
   @Cron('*/2 * * * *')
